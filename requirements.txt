@@ -1,0 +1,8 @@
+cloudpickle==1.2.2
+future==0.18.2
+gym==0.16.0
+gym-retro==0.7.0
+numpy==1.18.1
+pyglet==1.4.10
+scipy==1.4.1
+six==1.14.0
