@@ -1,0 +1,17 @@
+0 = no_op
+1 = up
+2 = down
+3 = left
+4 = up_left
+5 = down_left
+6 = right
+7 = up_right
+8 = down_right
+9 = fire / B / suck
+10 = fire / B / suck + movement?
+11 = down_fire
+12 = left 
+13 = up_left
+14 = down_someting
+15 = right
+16 = up_right
