@@ -38,6 +38,13 @@ class Kirby():
     def fit(self, states, targets, epochs, verbose, batch_size):
         self.model.fit(states, targets, epochs=epochs, verbose=verbose, batch_size=batch_size)
 
+    def save(self, filename):
+        j = self.model.to_json()
+        with open(filename, "w") as json_file:
+            json_file.write(j)
+
+        w = self.model.save_weights("model.h5")
+
 def main():
 
     env = retro.make(game='KirbysAdventure-Nes', use_restricted_actions=retro.Actions.DISCRETE)
@@ -49,10 +56,10 @@ def main():
     gamma = 0.95
     epsilon_decay = 0.99
     epsilon_min = 0.01
-    episodes = 1000
+    episodes = 1
 
-    replay_iterations = 100
-    replay_sample_size = 128
+    replay_iterations = 50
+    replay_sample_size = 64
     times_window = deque(maxlen=100)
     mean_times = deque(maxlen=episodes)
 
@@ -62,7 +69,7 @@ def main():
 
     for episode in range(episodes):
         current_state = env.reset()
-        for time in range(500):
+        for time in range(1000):
             current_state = grayscale(current_state)
             current_state = np.ndarray([1, current_state.shape[0], current_state.shape[1]])
             # Get an action from Q
@@ -70,6 +77,9 @@ def main():
 
             # Perform action
             next_state, reward, done, info = env.step(action)
+
+            if action == 6 or action == 7:
+                reward += 100
 
             # Store the experience
             memory.remember(current_state, action-1, reward, grayscale(next_state), done)
@@ -79,8 +89,8 @@ def main():
             if done:
                 break
             # Show gameplay
-            if episode > 950:
-                env.render()
+        #    if episode % 5 == 0:
+#                env.render()
 
         # Lower epsilon
         epsilon = epsilon * epsilon_decay if epsilon > epsilon_min else epsilon_min
@@ -91,6 +101,7 @@ def main():
 
         memory.replay(kirby, target_kirby, replay_iterations, replay_sample_size, gamma)
 
+    kirby.save("model.json")
     env.close()
 
 
