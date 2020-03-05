@@ -20,7 +20,7 @@ class ReplayMemory:
         self.current_state[self.current_index, :, :] = current_state
         self.action[self.current_index] = action
         self.reward[self.current_index] = reward
-        self.next_state[self.current_index, :, :] = next_state.reshape(1, next_state.shape[0], next_state.shape[1])
+        self.next_state[self.current_index, :, :] = next_state
         self.done[self.current_index] = done
         self.current_index = (self.current_index+1) % self.maxsize
         self.size = max(self.current_index, self.size)
