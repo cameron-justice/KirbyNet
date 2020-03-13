@@ -19,10 +19,10 @@ class Kirby():
         self.input_shape = inputShape
 
         self.model = tf.keras.models.Sequential()
-        self.model.add(tf.keras.layers.Conv2D(32, kernel_size=(7,7), padding='same', activation='relu', input_shape=inputShape))
-        self.model.add(tf.keras.layers.Conv2D(64, kernel_size=(3,3), padding='same', activation='relu'))
+        self.model.add(tf.keras.layers.Conv2D(64, kernel_size=(7,7), padding='same', activation='relu', input_shape=inputShape))
+        self.model.add(tf.keras.layers.Conv2D(64, kernel_size=(5,5), padding='same', activation='relu'))
         self.model.add(tf.keras.layers.Flatten())
-        self.model.add(tf.keras.layers.Dense(10, activation='relu'))
+        self.model.add(tf.keras.layers.Dense(15, activation='relu'))
         self.model.add(tf.keras.layers.Dense(actionSpace, activation='softmax'))
 
         self.model.compile(loss='categorical_crossentropy',
@@ -63,7 +63,7 @@ class Kirby():
             print("loaded from disk")
 
 def main():
-    env = retro.make("KirbysAdventure-Nes-USA",  use_restricted_actions=retro.Actions.DISCRETE)
+    env = retro.make("KirbysAdventure-Nes", state="Level1", use_restricted_actions=retro.Actions.DISCRETE)
     obs = env.reset()
     action_space = 11
     env.action_space = spaces.Discrete(11)
@@ -72,7 +72,6 @@ def main():
     epsilon_decay = 0.99
     epsilon_min = 0.01
     episodes = int(sys.argv[1])
-    episode_length = 3000
 
     img_width = 80 if not "full" in sys.argv else 224
     img_height = 80 if not "full" in sys.argv else 240
@@ -94,10 +93,15 @@ def main():
     if os.path.isfile("epsilon.txt"):
         f = open("epsilon.txt", 'r')
         epsilon = float(f.readline())
+    
+    episode_length = 10000 - (10000*epsilon)+500
 
     for episode in range(episodes):
         current_state = env.reset()
-        for time in range(episode_length):
+        previous_health = 0
+        previous_lives = 0
+        time = 0
+        while True:
             current_state = preprocess(current_state, channels, img_width, img_height)
             # Get an action from Q
             action = kirby.getAction(current_state)
@@ -105,29 +109,36 @@ def main():
             # Perform action
             next_state, reward, done, info = env.step(action)
 
-            print(info)
 
-            if action == 6 or action == 7 or action == 8:
-                if action == 7:
-                    reward += 10*action
-                else:
-                    reward += 5*action
+            #if action == 6 or action == 7 or action == 8:
+                #if action == 7:
+                    #reward += 10*action
+                #else:
+                    #reward += 5*action
 
             if action == 3 or action == 4 or action == 5:
                 reward -= 5*action
 
-            reward -= time / 10
+            reward += info['health'] - previous_health
+            reward += (info['lives'] - previous_lives) * 100
+
+            #reward -= time / 10
+            #print('\rReward: %d' % (reward), info)
 
             # Store the experience
             memory.remember(current_state, action-1, reward, preprocess(next_state, channels, img_width, img_height), done)
             #update observation
             current_state = next_state
+            previous_health = info['health']
+            previous_lives = info['lives']
 
-            if done:
+            if previous_lives != 4 or time > episode_length:
                 break
             # Show gameplay
             if "--play" in sys.argv:
                 env.render()
+
+            time += 1
 
         # Lower epsilon
         epsilon = epsilon * epsilon_decay if epsilon > epsilon_min else epsilon_min
